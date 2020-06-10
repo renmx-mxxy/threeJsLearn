@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>three.js webgl - transform controls</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                margin: 0px;
+                background-color: #000000;
+                color: #fff;
+                font-family:Monospace;
+                text-align: center;
+                font-size: 15px;
+                line-height: 30px;
+                overflow: hidden;
+            }
+        </style>
+    </head>
+    <body>
+
+        <script src="../libs/three.js"></script>
+        <script src="../libs/OrbitControls.js"></script>
+
+        <script>
+
+            var camera, scene, renderer, control, OrbitControls;
+            var scale = 1;
+
+            var worldPosition = new THREE.Vector3();
+            var camPosition = new THREE.Vector3();
+
+            init();
+            render();
+
+            function init() {
+
+                renderer = new THREE.WebGLRenderer();
+                renderer.setPixelRatio( window.devicePixelRatio );
+                renderer.setSize( window.innerWidth, window.innerHeight );
+                document.body.appendChild( renderer.domElement );
+
+                camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 300000 );
+                camera.position.set( 1000, 500, 1000 );
+                camera.lookAt( new THREE.Vector3( 0, 200, 0 ) );
+
+                scene = new THREE.Scene();
+
+                OrbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+
+                var geometry = new THREE.BoxGeometry( 200, 200, 200 );
+                var material = new THREE.MeshNormalMaterial(  );
+
+                mesh = new THREE.Mesh( geometry, material );
+                scene.add( mesh );
+
+                mesh_1 = new THREE.Mesh( geometry, material );
+                scene.add( mesh_1 );
+                mesh_1.position.x = 300;
+
+                var sphereGeo = new THREE.SphereBufferGeometry(150);
+                var sphereMat =new THREE.MeshNormalMaterial({side:THREE.DoubleSide});
+                sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                scene.add(sphere);
+                sphere.position.x = -300;
+
+                planeText1 = PlaneText('文字', '#FFFFFF');
+                scene.add(planeText1);
+                planeText1.position.set(0, 300, 0);
+
+
+                function PlaneText (text, textColor){
+                    var texture = canvasMultilineText(text, textColor );
+                    var planeGeometry = new THREE.PlaneBufferGeometry(250, 150);
+                    var planeMaterial = new THREE.MeshBasicMaterial({ map:texture, transparent:true, color:0xffffff});
+                    return new THREE.Mesh(planeGeometry, planeMaterial);
+                }
+
+                function canvasMultilineText (textArray, textColor, parameters){
+                    parameters = parameters || {} ;
+                    var width = 0;
+                    var canvas = document.createElement( 'canvas' );
+                    var context = canvas.getContext( '2d' );
+
+                    if ( typeof textArray === 'string' ) textArray = [ textArray ];
+
+                    context.font = parameters.font ? parameters.font : '48px sans-serif';
+
+                    for (let i = 0, len = textArray.length; i < len; i++) {
+                        width = context.measureText( textArray[i] ).width > width ? context.measureText( textArray[i] ).width : width;
+                    }
+
+                    canvas.width = width + 20;
+                    canvas.height = textArray.length * 60;
+
+                    context.font = parameters.font ? parameters.font : '48px sans-serif';
+
+                    for (let i = 0, len = textArray.length; i < len; i++) {
+                        context.fillStyle = textColor;
+                        context.fillText( textArray[i], 10, 48  + i * 60 );
+                    }
+
+                    var texture = new THREE.Texture( canvas );
+                    texture.minFilter = texture.magFilter = THREE.NearestFilter;
+                    texture.needsUpdate = true;
+
+                    return texture;
+
+                }
+
+
+                window.addEventListener( 'resize', onWindowResize, false );
+
+
+            }
+
+            function onWindowResize() {
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize( window.innerWidth, window.innerHeight );
+            }
+
+
+            animate(mesh);
+
+            function animate() {
+                updateObj(mesh_1, 1500);
+                updateObj(sphere, 1500);
+                updateObj(planeText1, 1500);
+
+                requestAnimationFrame( animate );
+
+                render()
+            }
+
+            function updateObj(mesh, coefficient) {
+                //更新mesh对象及其子对象的全局变换
+                mesh.updateMatrixWorld();
+                worldPosition.setFromMatrixPosition( mesh.matrixWorld );
+                camera.updateMatrixWorld();
+                camPosition.setFromMatrixPosition( camera.matrixWorld );
+                //根据距离，动态调整缩放比例
+                scale = worldPosition.distanceTo( camPosition ) / coefficient;
+                mesh.scale.set( scale, scale, scale );
+
+            }
+
+            function render() {
+                renderer.render( scene, camera );
+            }
+
+        </script>
+
+    </body>
+</html>
